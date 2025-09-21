@@ -8,12 +8,43 @@ import matplotlib.pyplot as plt
 import scrython
 from Levenshtein import distance
 from difflib import SequenceMatcher
-card_path = r"test images\PXL_20250919_074527542.jpg"
-card2_path = r"test images\PXL_20250919_074534643.MP.jpg"
-voyaging_sartyr = r"test images\PXL_20250919_074530166.jpg"
-arbor_elf = r"test images\PXL_20250919_074532601.jpg"
 import requests
 import json
+
+llanowar_elves = r"test images\PXL_20250919_074527542.jpg"
+khalni = r"test images\PXL_20250919_074534643.MP.jpg"
+voyaging_sartyr = r"test images\PXL_20250919_074530166.jpg"
+arbor_elf = r"test images\PXL_20250919_074532601.jpg"
+
+import requests
+import time
+
+def get_all_card_names_efficient():
+    """
+    More efficient method using Scryfall's pagination
+    """
+    card_names = set()  # Use set to avoid duplicates
+    next_page = "https://api.scryfall.com/cards/search?q=game:paper"
+    
+    while next_page:
+        time.sleep(0.1)  # Respect rate limits
+        
+        response = requests.get(next_page)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            for card in data.get('data', []):
+                card_names.add(card['name'])
+            
+            next_page = data.get('next_page')
+            print(f"Fetched page, total names: {len(card_names)}")
+            
+        else:
+            print(f"Error: {response.status_code}")
+            break
+    
+    return sorted(list(card_names))
 
 class ImagePreprocessor():
     def __init__(self):
@@ -23,6 +54,8 @@ class ImagePreprocessor():
         self.min_contour_area = 5000
         self.contrast_alpha = 1.5
         self.contrast_beta = 40
+        self.card_width = 488
+        self.card_height = 680
     def display_image(self, img, title="Image"):
         """Display an image using matplotlib"""
         plt.figure(figsize=(10, 8))
@@ -73,11 +106,12 @@ class ImagePreprocessor():
         edges = cv2.Canny(blurred, self.canny_threshold_low, self.canny_threshold_high)
         
         #Dialate edges to close gaps
-        dialated = cv2.dilate(edges, None, iterations=2)
+        kernel = np.ones((3, 3), np.uint8)
+        dialated = cv2.dilate(edges, kernel, iterations=2)
         
         return dialated
     
-    def find_card_contours(self, edges):
+    def find_card_fom_incomplete_text_contours(self, edges):
         """
         Find card contous inthe edge image and specify potential card contours
         """
@@ -164,8 +198,8 @@ class ImagePreprocessor():
 
         # Apply the perspective transformation
         warped = cv2.warpPerspective(image, M, (max_width, max_height))
-
-        return warped
+        resiezd = cv2.resize(warped, (self.card_width, self.card_height))
+        return resiezd
     def preprocess_for_ocr(self, card_image):
         """
         Prepare the extracted card image for OCR text recognition
@@ -208,7 +242,7 @@ class ImagePreprocessor():
             self.display_image(edges, "Edge Detection")
         
         # Find card contours
-        card_contours = self.find_card_contours(edges)
+        card_contours = self.find_card_fom_incomplete_text_contours(edges)
         
         
         if not card_contours:
@@ -243,7 +277,8 @@ class ocr_process():
     def __init__(self):
         self.name_height = 0.15
         self.name_width = 0.7
-    def extract_title(self, ocr_image):
+    
+    def extract_title_img(self, ocr_image):
         img_h, img_w, _ = ocr_image.shape
 
         crop_h = int(img_h * self.name_height)
@@ -253,17 +288,17 @@ class ocr_process():
         cropped = ocr_image[y:y+crop_h, x:x+crop_w]
 
         return cropped
-    def get_text(self, image):
-        title_cropped = self.extract_title(image)
-        cv2.imshow("Card", title_cropped)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+    def get_text(self, image, debug = False):
+        title_cropped = self.extract_title_img(image)
+
         text = pytesseract.image_to_string(title_cropped, config="--psm 7")  # PSM 7 = single line of text
-        print(text)
-        print("Detected title:", text.strip())
+
+        if debug: (print("Detected title:", text.strip()))
         return text
 
-    def find_card(self, image):
+    def find_card_fom_incomplete_text(self, image):
+        card_names = get_all_card_names_efficient()
+        print(card_names[0:10])
         with open("Scryfall cards normal image.json") as f:
             cardjson = json.load(f)
 
@@ -281,21 +316,46 @@ class ocr_process():
             i += 1
         
         return cardjson[levensteins_id]
+
+    def find_info(self, image, type):
+        return self.find_card_fom_incomplete_text(image)[type]
+    
+    def extract_set(self, image):
+        img_h, img_w, _ = image.shape
+
+        #crop_h = int(img_h * self.name_height)
+        #crop_w = int(img_w * self.name_width)
+        #TODO Crop with edge detection
+        x, y = img_w * 0.8, img_h/2  # for example, top-left
+        x = int(x)
+        y = int(y)
+        #crop in
+        cropped = image[y:y+100, x:x+100]
+        self.display(cropped)
+
+        #Apply B/W
+        gray = cv2.cvtColor(cropped, cv2.COLOR_RGB2GRAY)
+        _, BW_cropped = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        self.display(BW_cropped)
+        return cropped
+    def find_set_from_image(self, image):
+        pass
+
+
     def display(self, image):
-        imagejson = self.find_card(image)
+        """ imagejson = self.find_card_fom_incomplete_text(image)
         imageurl = imagejson["image_url"]
         bilde = requests.get(imageurl)
         bilde.raise_for_status()
 
         img_array = np.frombuffer(bilde.content, np.uint8)
-        im = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        im = cv2.imdecode(img_array, cv2.IMREAD_COLOR_BGR)
+        if not im: return
+        img_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB) """
 
-        img_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-
-        cv2.imshow("Card", img_rgb)
+        cv2.imshow("Card", image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-        
 # Example usage and debugging
 if __name__ == "__main__":
     # Create preprocessor
@@ -303,10 +363,14 @@ if __name__ == "__main__":
     ocrpros = ocr_process()
     # Process an image with debugging enabled
     #card_image, ocr_image = preprocessor.process_image(card2_path, debug=True)
-    ocr_image = preprocessor.process_image(voyaging_sartyr)[0]
-    title = ocrpros.extract_title(ocr_image)
+    ocr_image = preprocessor.process_image(khalni)[0]
+    #title = ocrpros.extract_title_img(ocr_image)
     #preprocessor.display_image(title)
-    ocrpros.display(ocr_image)
+    #ocrpros.display(ocr_image)
+    #print(ocrpros.find_info(ocr_image, "name"))
+    ocrpros.extract_set(ocr_image)
+
+
     """ if card_image is not None:
         # Save the processed images
         cv2.imwrite("extracted_card.jpg", card_image)
