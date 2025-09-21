@@ -11,6 +11,7 @@ from huggingface_hub import InferenceClient
 
 base_url = "https://api.aimlapi.com/v1"
 api_key = "56bb708f468b49aea852b03ab56a7950"
+context = []
 system_prompt = """You are a master storyteller AI specializing in creating engaging, coherent, and imaginative narratives. Your purpose is to generate complete short stories based on user prompts while adhering to these guidelines:
 
 1. **Story Structure**: Always follow a narrative arc with exposition, rising action, climax, falling action, and resolution.
@@ -21,7 +22,7 @@ system_prompt = """You are a master storyteller AI specializing in creating enga
 
 4. **Genre Adaptation**: Tailor your writing style to match the requested genre (fantasy, sci-fi, romance, mystery, etc.).
 
-5. **Length Management**: Generate stories between 500-800 words unless specifically requested otherwise.
+5. **Length Management**: Respond in about 3 sentences, you can use abit more if you need to describe an environment or a conversation but never over 5 sentences.
 
 6. **Originality**: Avoid clichés and overused tropes unless specifically requested. Offer fresh perspectives.
 
@@ -67,11 +68,12 @@ def generate_story_HF(prompt, master_prompt=None):
         messages=[
             {
                 "role": "user",
-                "content": f"{master_prompt}\n\nUser request: {prompt}"
+                "content": f"{master_prompt}\n\n{context}\n\nUser request: {prompt}"
             }
         ],
     )
     text = completion.choices[0].message.content
+    context.append(text)
     print(text)
     return text
 def generate_and_display_image(prompt, api_token=None, system_prompt=None):
