@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Generator</title>
+</head>
+<body>
+    <button id="generateBtn">Generate Image</button>
+    <div id="imageContainer"></div>
+
+    <script type="module">
+        import { InferenceClient } from 'https://esm.sh/@huggingface/inference';
+
+        // You'll need to set your token - for development, you can set it directly (not recommended for production)
+        const HF_TOKEN = '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'; // Replace with your actual token
+        
+        const client = new InferenceClient(HF_TOKEN);
+        const generateBtn = document.getElementById('generateBtn');
+        const imageContainer = document.getElementById('imageContainer');
+
+        generateBtn.addEventListener('click', async () => {
+            try {
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating...';
+                
+                const image = await client.textToImage({
+                    provider: "fal-ai",
+                    model: "black-forest-labs/FLUX.1-Krea-dev",
+                    inputs: "Astronaut riding a horse",
+                    parameters: { num_inference_steps: 5 },
+                });
+
+                // Create a URL for the blob
+                const imageUrl = URL.createObjectURL(image);
+
+                // Clear previous image
+                imageContainer.innerHTML = '';
+                
+                // Display the new image
+                const imgElement = document.createElement('img');
+                imgElement.src = imageUrl;
+                imgElement.style.maxWidth = '100%';
+                imgElement.style.height = 'auto';
+                imageContainer.appendChild(imgElement);
+
+                // Create download link
+                const downloadLink = document.createElement('a');
+                downloadLink.href = imageUrl;
+                downloadLink.download = 'generated-image.png';
+                downloadLink.textContent = 'Download Image';
+                downloadLink.style.display = 'block';
+                downloadLink.style.marginTop = '10px';
+                imageContainer.appendChild(downloadLink);
+
+            } catch (error) {
+                console.error('Error generating image:', error);
+                imageContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Image';
+            }
+        });
+    </script>
+</body>
+</html>
