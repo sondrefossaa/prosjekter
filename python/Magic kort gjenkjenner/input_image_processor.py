@@ -307,6 +307,7 @@ class ocr_process():
         levensteins_max = 0
         levensteins_id = 0
         i = 0
+        #Maybe rewrite in c++
         for card in cardjson:
             matcher  = SequenceMatcher(None, card["name"], found_text)
             dist = matcher.ratio()

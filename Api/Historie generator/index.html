@@ -5,8 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Generator</title>
 </head>
+<style>
+    .body {
+        display: flex;
+    }
+    .generateStoryBtn{
+        background-color: black;
+    }
+</style>
 <body>
-    <button id="generateBtn">Generate Image</button>
+    <textarea name="test" id="storyInput"></textarea>
+    <button id="generateStoryBtn">Generate story</button>
+    <button id="generateImageBtn">Generate Image</button>
     <div id="imageContainer"></div>
 
     <script type="module">
@@ -16,9 +26,10 @@
         const HF_TOKEN = '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'; // Replace with your actual token
         
         const client = new InferenceClient(HF_TOKEN);
-        const generateBtn = document.getElementById('generateBtn');
+        const generateBtn = document.getElementById('generateImageBtn');
         const imageContainer = document.getElementById('imageContainer');
-
+        const storyGenerateBtn = document.getElementById('generateStoryBtn');
+        const textInputArea = document.getElementById('storyInput')
         generateBtn.addEventListener('click', async () => {
             try {
                 generateBtn.disabled = true;
@@ -61,6 +72,23 @@
                 generateBtn.textContent = 'Generate Image';
             }
         });
+        storyGenerateBtn.addEventListener('click', async () => {
+            //const client = new InferenceClient(process.env.HF_TOKEN);
+            const text_input = textInputArea.value
+            const chatCompletion = await client.chatCompletion({
+                provider: "novita",
+                model: "Qwen/Qwen3-Next-80B-A3B-Instruct",
+                messages: [
+                    {
+                        role: "user",
+                        content: text_input,
+                    },
+                ],
+            });
+
+            console.log(chatCompletion.choices[0].message.content);
+           }
+        );
     </script>
 </body>
 </html>
