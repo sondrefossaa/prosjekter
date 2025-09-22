@@ -297,8 +297,8 @@ class ocr_process():
         return text
 
     def find_card_fom_incomplete_text(self, image):
-        card_names = get_all_card_names_efficient()
-        print(card_names[0:10])
+        #card_names = get_all_card_names_efficient()
+        #print(card_names[0:10])
         with open("Scryfall cards normal image.json") as f:
             cardjson = json.load(f)
 
@@ -364,12 +364,12 @@ if __name__ == "__main__":
     ocrpros = ocr_process()
     # Process an image with debugging enabled
     #card_image, ocr_image = preprocessor.process_image(card2_path, debug=True)
-    ocr_image = preprocessor.process_image(khalni)[0]
+    ocr_image = preprocessor.process_image(khalni, True)[0]
     #title = ocrpros.extract_title_img(ocr_image)
     #preprocessor.display_image(title)
     #ocrpros.display(ocr_image)
-    #print(ocrpros.find_info(ocr_image, "name"))
-    ocrpros.extract_set(ocr_image)
+    print(ocrpros.find_info(ocr_image, "name"))
+    #ocrpros.extract_set(ocr_image)
 
 
     """ if card_image is not None:
