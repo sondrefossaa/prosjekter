@@ -12,9 +12,14 @@
     .generateStoryBtn{
         background-color: black;
     }
+    #mainImage {
+        size: 100%;
+
+    }
 </style>
 <body>
-    <textarea name="test" id="storyInput"></textarea>
+    <img id="mainImage" src="https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png" alt="">
+    <textarea name="test" id="storyInput">Test</textarea>
     <button id="generateStoryBtn">Generate story</button>
     <button id="generateImageBtn">Generate Image</button>
     <div id="imageContainer"></div>
@@ -30,6 +35,40 @@
         const imageContainer = document.getElementById('imageContainer');
         const storyGenerateBtn = document.getElementById('generateStoryBtn');
         const textInputArea = document.getElementById('storyInput')
+        const imageDisplay = document.getElementById('mainImage')
+        const STORY_MASTER = `
+        You are a master storyteller AI specializing in creating engaging, coherent, and imaginative narratives. Your purpose is to generate complete short stories based on user prompts while adhering to these guidelines:
+
+        1. **Story Structure**: Always follow a narrative arc with exposition, rising action, climax, falling action, and resolution.
+
+        2. **Character Development**: Create multidimensional characters with distinct personalities, motivations, and flaws.
+
+        3. **Setting**: Establish vivid, immersive worlds using sensory details and atmospheric descriptions.
+
+        4. **Genre Adaptation**: Tailor your writing style to match the requested genre (fantasy, sci-fi, romance, mystery, etc.).
+
+        5. **Length Management**: Respond in about 3 sentences, you can use abit more if you need to describe an environment or a conversation but never over 5 sentences.
+
+        6. **Originality**: Avoid clichés and overused tropes unless specifically requested. Offer fresh perspectives.
+
+        7. **Emotional Resonance**: Incorporate emotional depth that connects readers to characters and events.
+
+        8. **Pacing**: Balance description with action to maintain reader engagement throughout.
+
+        9. **Theme Integration**: Weave underlying themes throughout the narrative when appropriate.
+
+        10. **Language Quality**: Use rich vocabulary, varied sentence structures, and appropriate literary devices.
+        11. the most important is that you continue the story from the prompt`
+        const IMAGE_MASTER = `
+        You are an expert AI image generator. Create highly detailed, visually stunning images 
+        based on the user's prompt. Focus on:
+        - Photorealistic quality when appropriate
+        - Proper lighting and composition
+        - Vivid colors and contrast
+        - Attention to fine details
+        - Artistic interpretation when requested`
+
+
         generateBtn.addEventListener('click', async () => {
             try {
                 generateBtn.disabled = true;
@@ -89,6 +128,45 @@
             console.log(chatCompletion.choices[0].message.content);
            }
         );
+        async function generate_text(user_query){
+            const chatCompletion = await client.chatCompletion({
+                provider: "novita",
+                model: "Qwen/Qwen3-Next-80B-A3B-Instruct",
+                messages: [
+                    {
+                        role: "user",
+                        content: "master prompt" + IMAGE_MASTER + "user_input" + user_query,
+                    },
+                ],
+            });
+            return chatCompletion.choices[0].message.content
+        }
+        async function generate_image(text_context){
+            const image = await client.textToImage({
+                provider: "fal-ai",
+                model: "black-forest-labs/FLUX.1-Krea-dev",
+                inputs: "master prompt" + IMAGE_MASTER + "user_input" + text_context,
+                parameters: { num_inference_steps: 5 },
+            });
+            const imageUrl = URL.createObjectURL(image);
+            imageDisplay.src = imageUrl
+        }
+        textInputArea.addEventListener('keydown', function(event) {
+            if (event.key == "Enter"){
+                event.preventDefault
+                generate_text(textInputArea.value)
+                    .then(result =>{
+                        console.log(result);
+                        generate_image(result)
+                        textInputArea.value = result
+                    })
+                    .catch(err => console.log(err));
+            }
+
+
+        }
+        
+        )
     </script>
 </body>
 </html>

@@ -25,7 +25,6 @@ def get_all_card_names_efficient():
     """
     card_names = set()  # Use set to avoid duplicates
     next_page = "https://api.scryfall.com/cards/search?q=game:paper"
-    
     while next_page:
         time.sleep(0.1)  # Respect rate limits
         
