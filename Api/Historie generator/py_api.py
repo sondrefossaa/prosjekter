@@ -8,9 +8,11 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 from huggingface_hub import InferenceClient
+from dotenv import load_dotenv
 
+load_dotenv()
 base_url = "https://api.aimlapi.com/v1"
-api_key = "56bb708f468b49aea852b03ab56a7950"
+api_key = os.getenv('API_KEY')
 context = []
 system_prompt = """You are a master storyteller AI specializing in creating engaging, coherent, and imaginative narratives. Your purpose is to generate complete short stories based on user prompts while adhering to these guidelines:
 

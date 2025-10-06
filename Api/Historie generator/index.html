@@ -25,10 +25,11 @@
     <div id="imageContainer"></div>
 
     <script type="module">
+        import {api_key} from './config.js'
         import { InferenceClient } from 'https://esm.sh/@huggingface/inference';
 
         // You'll need to set your token - for development, you can set it directly (not recommended for production)
-        const HF_TOKEN = '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'; // Replace with your actual token
+        const HF_TOKEN = api_key; // Replace with your actual token
         
         const client = new InferenceClient(HF_TOKEN);
         const generateBtn = document.getElementById('generateImageBtn');
